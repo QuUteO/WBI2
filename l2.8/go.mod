@@ -1,4 +1,4 @@
-module WB-L2
+module WB-L2/l2.8
 
 go 1.25.2
 
