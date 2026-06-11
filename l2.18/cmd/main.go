@@ -3,14 +3,19 @@ package main
 import (
 	"CRUD/config"
 	"CRUD/internal/handler"
+	"CRUD/internal/middleware"
 	"CRUD/internal/repository"
 	"CRUD/internal/service"
+	"flag"
 	"log"
 	"net/http"
 )
 
 func main() {
-	cfg, err := config.LoadConfig("/Users/mihailignatev/Desktop/WB I2/l2.18/config/config.yaml")
+	configPath := flag.String("config", "config/config.yaml", "path to config file")
+	flag.Parse()
+
+	cfg, err := config.LoadConfig(*configPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -28,7 +33,9 @@ func main() {
 	mux.HandleFunc("/events_for_week", calendarHandler.GetEventsForWeek)
 	mux.HandleFunc("/events_for_month", calendarHandler.GetEventsForMonth)
 
-	if err := http.ListenAndServe(cfg.Addr, mux); err != nil {
+	loggedMux := middleware.LoggingMiddleware(mux)
+
+	if err := http.ListenAndServe(cfg.Addr, loggedMux); err != nil {
 		log.Fatal(err)
 	}
 }

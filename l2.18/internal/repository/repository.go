@@ -2,14 +2,17 @@ package repository
 
 import (
 	"CRUD/internal/model"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
 )
 
+var ErrEventNotFound = errors.New("event not found")
+
 // Repository описывает контракт (интерфейс)
 type Repository interface {
-	CreateEvent(event model.Event) error
+	CreateEvent(event model.Event) (model.Event, error)
 	UpdateEvent(event model.Event) error
 	DeleteEvent(id int) error
 	GetForPeriod(userID int, start, end time.Time) ([]model.Event, error)
@@ -28,7 +31,7 @@ func NewRepository() *RepositoryEvent {
 	}
 }
 
-func (r *RepositoryEvent) CreateEvent(event model.Event) error {
+func (r *RepositoryEvent) CreateEvent(event model.Event) (model.Event, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -36,7 +39,7 @@ func (r *RepositoryEvent) CreateEvent(event model.Event) error {
 	r.nextID++
 
 	r.events[event.ID] = event
-	return nil
+	return event, nil
 }
 
 func (r *RepositoryEvent) UpdateEvent(event model.Event) error {
@@ -44,7 +47,7 @@ func (r *RepositoryEvent) UpdateEvent(event model.Event) error {
 	defer r.mu.Unlock()
 
 	if _, ok := r.events[event.ID]; !ok {
-		return fmt.Errorf("event with id %d does not exist", event.ID)
+		return fmt.Errorf("%w: id %d", ErrEventNotFound, event.ID)
 	}
 
 	r.events[event.ID] = event
@@ -56,7 +59,7 @@ func (r *RepositoryEvent) DeleteEvent(id int) error {
 	defer r.mu.Unlock()
 
 	if _, ok := r.events[id]; !ok {
-		return fmt.Errorf("event with id %d does not exist", id)
+		return fmt.Errorf("%w: id %d", ErrEventNotFound, id)
 	}
 
 	delete(r.events, id)
